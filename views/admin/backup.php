@@ -7,7 +7,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 }
 
 // Path ke file .bat
-$batFile = realpath(__DIR__ . '/../../scripts/backup.bat');
+$batFile = realpath(__DIR__ . '/../../scripts/backup.cmd');
 
 // Cek apakah file ada
 if (!file_exists($batFile)) {
