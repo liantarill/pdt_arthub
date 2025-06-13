@@ -1,4 +1,4 @@
-# 🎨 ArtHub - Sistem Lelang Karya Seni
+# ArtHub - Sistem Lelang Karya Seni
 
 ArtHub adalah platform lelang karya seni online yang memungkinkan seniman untuk menjual karya mereka dan pembeli untuk menawar karya seni yang mereka minati. Sistem ini dibangun menggunakan PHP dan MySQL dengan memanfaatkan stored procedure, trigger, transaction, dan stored function untuk memastikan integritas data dan keamanan transaksi.
 
@@ -10,7 +10,6 @@ ArtHub memiliki fitur-fitur utama sebagai berikut:
 
 - **Manajemen Karya Seni**: Seniman dapat mengunggah, mengedit, dan menghapus karya seni mereka
 - **Sistem Lelang**: Karya seni dapat dilelang dengan harga awal dan waktu berakhir yang ditentukan
-- **Penawaran**: Pembeli dapat menawar karya seni yang sedang dilelang
 - **Manajemen Saldo**: Pembeli dapat menambahkan dana ke akun mereka
 - **Dashboard**: Dashboard khusus untuk seniman dan pembeli
 
@@ -44,7 +43,6 @@ Prosedur ini menangani validasi penawaran, memastikan penawaran lebih tinggi dar
 function tambahKaryaSeni($title, $description, $artist_id, $starting_price, $image_path)
 {
     global $conn;
-    // Escape strings to prevent SQL injection (basic protection)
     $title = mysqli_real_escape_string($conn, $title);
     $description = mysqli_real_escape_string($conn, $description);
     $image_path = mysqli_real_escape_string($conn, $image_path);
@@ -92,27 +90,22 @@ BEGIN
     DECLARE auction_status VARCHAR(20);
     DECLARE bidder_balance DECIMAL(10,2);
 
-    -- Ambil harga dan status lelang saat ini
     SELECT current_price, status INTO current_auction_price, auction_status
     FROM auctions WHERE id = NEW.auction_id;
 
-    -- Ambil saldo pembeli
     SELECT balance INTO bidder_balance
     FROM users WHERE id = NEW.bidder_id;
 
-    -- Validasi penawaran
     IF NEW.bid_amount &lt;= current_auction_price THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Bid amount must be higher than current price';
     END IF;
 
-    -- Validasi status lelang
     IF auction_status != 'active' THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Cannot bid on inactive auction';
     END IF;
 
-    -- Validasi saldo pembeli
     IF bidder_balance &lt; NEW.bid_amount THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Insufficient balance';
@@ -129,7 +122,6 @@ CREATE TRIGGER after_bid_insert
 AFTER INSERT ON bids
 FOR EACH ROW
 BEGIN
-    -- Update harga lelang saat ini
     UPDATE auctions
     SET current_price = NEW.bid_amount
     WHERE id = NEW.auction_id AND current_price &lt; NEW.bid_amount;
@@ -239,7 +231,7 @@ Transaction ini memastikan bahwa penambahan karya seni dan pembuatan lelang baru
 ### 📊 Stored Function
 
 Stored function digunakan untuk mengembalikan nilai berdasarkan perhitungan atau query tertentu.
-![Trigger](assets/img/function.png)
+![Function](assets/img/function.png)
 
 #### 1. `hitung_total_bid` - Fungsi untuk menghitung total penawaran pada lelang
 
@@ -280,6 +272,105 @@ Sistem backup otomatis tidak terlihat secara eksplisit dalam kode yang diberikan
 3. Konfigurasi koneksi database di `config/db.php`
 4. Jalankan aplikasi menggunakan server web seperti Apache
 
-## 📝 Kesimpulan
+### 🔄 Backup Otomatis
 
-ArtHub mendemonstrasikan penggunaan konsep database lanjutan (stored procedure, trigger, transaction, dan stored function) untuk membangun sistem lelang karya seni yang aman dan andal. Dengan memanfaatkan fitur-fitur ini, sistem dapat memastikan integritas data dan konsistensi operasi bisnis.
+Sistem backup otomatis diimplementasikan untuk memastikan keamanan dan integritas data dalam sistem ArtHub. Backup dilakukan secara berkala untuk mencegah kehilangan data akibat kegagalan sistem atau kesalahan operasional.
+
+#### Implementasi Backup Database
+
+**1. Script Backup Otomatis (backup.cmd)**
+
+```batch
+@echo off
+:: Set tanggal dan waktu (format: YYYY-MM-DD_HH-MM-SS)
+for /f "tokens=1-4 delims=/ " %%a in ("%date%") do (
+    set YYYY=%%d
+    set MM=%%b
+    set DD=%%c
+)
+for /f "tokens=1-3 delims=:. " %%a in ("%time%") do (
+    set HH=%%a
+    set Min=%%b
+    set Sec=%%c
+)
+
+:: Hilangkan spasi di jam jika <10
+if "%HH:~0,1%"==" " set HH=0%HH:~1,1%
+
+:: Lokasi file backup
+set FILE_BACKUP=C:\laragon\www\arthub-auction\backups\arthub_%YYYY%-%MM%-%DD%_%HH%-%Min%-%Sec%.sql
+
+:: Jalankan mysqldump untuk database arthub_db
+mysqldump -u root --routines arthub_db > "%FILE_BACKUP%"
+
+echo Backup selesai: %FILE_BACKUP%
+pause
+```
+
+**2. Interface Backup melalui Web (backup.php)**
+
+```php
+<?php
+session_start();
+
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
+    echo "Akses ditolak.";
+    exit();
+}
+
+// Path ke file .bat
+$batFile = realpath(__DIR__ . '/../../scripts/backup.bat');
+
+// Cek apakah file ada
+if (!file_exists($batFile)) {
+    $_SESSION['error'] = 'File backup.bat tidak ditemukan.';
+    header('Location: dashboard.php');
+    exit();
+}
+
+// Jalankan file .bat di background (tanpa nunggu proses)
+pclose(popen("start /B \"\" \"$batFile\"", "r"));
+
+$_SESSION['success'] = 'Backup database sedang diproses di background.';
+header('Location: dashboard.php');
+exit();
+```
+
+#### Fitur Backup yang Diimplementasikan
+
+1. **Backup Database Lengkap**: Menggunakan `mysqldump` untuk membuat backup lengkap database termasuk stored procedures, functions, dan triggers
+2. **Penamaan File Otomatis**: File backup diberi nama dengan timestamp untuk memudahkan identifikasi
+3. **Akses Terbatas**: Hanya admin yang dapat menjalankan proses backup
+4. **Eksekusi Background**: Backup dijalankan di background untuk tidak mengganggu operasi sistem
+5. **Notifikasi Status**: Sistem memberikan feedback kepada admin tentang status backup
+
+#### Keuntungan Sistem Backup
+
+- **Disaster Recovery**: Memungkinkan pemulihan data jika terjadi kegagalan sistem
+- **Data Integrity**: Menjaga konsistensi data dengan backup yang teratur
+- **Compliance**: Memenuhi standar keamanan data untuk sistem lelang
+- **Audit Trail**: Menyimpan riwayat perubahan data untuk keperluan audit
+
+### 🧩 Relevansi Proyek dengan Pemrosesan Data Terdistribusi
+
+Meskipun ArtHub saat ini diimplementasikan sebagai sistem monolitik, proyek ini memiliki relevansi yang kuat dengan konsep pemrosesan data terdistribusi dan dapat dikembangkan ke arah tersebut.
+
+#### Aspek Terdistribusi dalam Sistem Lelang
+
+**1. Skalabilitas Horizontal**
+
+- Sistem lelang memerlukan kemampuan menangani banyak pengguna secara bersamaan
+- Database dapat didistribusikan berdasarkan region atau kategori karya seni
+- Load balancing untuk menangani traffic tinggi saat lelang populer
+
+**2. Konsistensi Data Terdistribusi**
+
+- Penawaran lelang memerlukan konsistensi yang ketat (ACID properties)
+- Implementasi distributed transactions untuk memastikan integritas data
+- Conflict resolution untuk penawaran yang terjadi bersamaan
+
+**3. Real-time Processing**
+
+- Sistem lelang memerlukan update real-time untuk harga dan status lelang
+- Event streaming untuk notifikasi penawaran baru
+- Distributed caching untuk performa yang optimal
