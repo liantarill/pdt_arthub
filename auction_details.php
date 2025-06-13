@@ -27,10 +27,7 @@ if (!$auction) {
     exit();
 }
 
-// Hitung total bid (tanpa function)
-$bid_amount_result = mysqli_query($conn, "SELECT SUM(bid_amount) AS total FROM bids WHERE auction_id = $auction_id");
-$bid_row = mysqli_fetch_assoc($bid_amount_result);
-$total_bid_amount = $bid_row['total'] ?? 0;
+$total_bid_amount = hitungTotalBid($auction_id);
 
 // Ambil riwayat bid
 $bid_query = "SELECT b.*, u.username, u.full_name 
@@ -43,13 +40,13 @@ $bids = mysqli_query($conn, $bid_query);
 
 // Cek apakah user saat ini adalah penawar tertinggi
 $is_winning = false;
-if (isset($_SESSION['user_id']) && mysqli_num_rows($bids) > 0) {
-    $highest_bid = mysqli_fetch_assoc($bids);
-    if ($highest_bid['bidder_id'] == $_SESSION['user_id']) {
+if (isset($_SESSION['user_id'])) {
+    $top_bidder = getHighestBid($auction_id);
+    if ($top_bidder == $_SESSION['user_id']) {
         $is_winning = true;
     }
-    mysqli_data_seek($bids, 0); // reset ulang pointer untuk bisa loop
 }
+
 ?>
 
 

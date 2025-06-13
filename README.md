@@ -235,16 +235,28 @@ Stored function digunakan untuk mengembalikan nilai berdasarkan perhitungan atau
 
 #### 1. `hitung_total_bid` - Fungsi untuk menghitung total penawaran pada lelang
 
-**Implementasi di file**: `db.php`
+**Implementasi di file**: `auction_details.php`
+
+Implementasi fungsi `hitung_total_bid`:
 
 ```php
-function hitungTotalBid($auction_id)
-{
-    global $conn;
-    $query = "SELECT hitung_total_bid($auction_id) as total";
-    $result = mysqli_query($conn, $query);
-    $row = mysqli_fetch_assoc($result);
-    return $row['total'];
+$total_bid_amount = hitungTotalBid($auction_id);
+```
+
+```php
+<small class="text-muted">Total Bid Amount: Rp. <?php echo number_format($total_bid_amount, 2, ',', '.'); ?></small>
+
+```
+
+Implementasi fungsi `get_highest_bid` :
+
+```php
+$is_winning = false;
+if (isset($_SESSION['user_id'])) {
+    $top_bidder = getHighestBid($auction_id);
+    if ($top_bidder == $_SESSION['user_id']) {
+        $is_winning = true;
+    }
 }
 ```
 

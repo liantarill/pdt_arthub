@@ -25,7 +25,15 @@ function hitungTotalBid($auction_id)
     $row = mysqli_fetch_assoc($result);
     return $row['total'];
 }
-
+function getHighestBid($auction_id)
+{
+    global $conn;
+    $auction_id = (int)$auction_id;
+    $query = "SELECT get_highest_bid($auction_id) AS highest";
+    $result = mysqli_query($conn, $query);
+    $row = mysqli_fetch_assoc($result);
+    return $row ? $row['highest'] : 0;
+}
 // Function to add artwork
 function tambahKaryaSeni($title, $description, $artist_id, $starting_price, $image_path)
 {
