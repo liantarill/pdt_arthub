@@ -237,8 +237,6 @@ Stored function digunakan untuk mengembalikan nilai berdasarkan perhitungan atau
 
 **Implementasi di file**: `auction_details.php`
 
-Implementasi fungsi `hitung_total_bid`:
-
 ```php
 $total_bid_amount = hitungTotalBid($auction_id);
 ```
@@ -247,6 +245,10 @@ $total_bid_amount = hitungTotalBid($auction_id);
 <small class="text-muted">Total Bid Amount: Rp. <?php echo number_format($total_bid_amount, 2, ',', '.'); ?></small>
 
 ```
+
+#### 2. `get_highest_bid` - Fungsi untuk menghitung total penawaran pada lelang
+
+**Implementasi di file**: `auction_details.php`
 
 Implementasi fungsi `get_highest_bid` :
 
