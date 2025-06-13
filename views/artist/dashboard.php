@@ -70,10 +70,10 @@ $error = $_GET['error'] ?? '';
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
-            <a class="navbar-brand" href="index.php">ArtHub</a>
+            <a class="navbar-brand" href="../../index.php">ArtHub</a>
             <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="index.php">Auctions</a>
-                <a class="nav-link" href="gallery.php">Gallery</a>
+                <a class="nav-link" href="../../index.php">Auctions</a>
+                <a class="nav-link" href="../../gallery.php">Gallery</a>
                 <?php if (isset($_SESSION['user_id'])): ?>
                     <a class="nav-link active" href="">Dashboard</a>
                     <?php if ($_SESSION['role'] === 'artist'): ?>
@@ -118,7 +118,7 @@ $error = $_GET['error'] ?? '';
                                                 <?= ucfirst($auction['status']) ?>
                                             </span>
                                             <span class="badge bg-primary stats-badge">
-                                                $<?= number_format($auction['current_price'], 2, ',', '.') ?>
+                                                Rp. <?= number_format($auction['current_price'], 2, ',', '.') ?>
                                             </span>
                                             <span class="badge bg-info stats-badge">
                                                 <?= $auction['total_bids'] ?> bids
@@ -132,9 +132,9 @@ $error = $_GET['error'] ?? '';
                                             </a>
 
                                             <?php if ($auction['status'] === 'active') : ?>
-                                                <form method="POST" action="force_close_auction.php" style="display:inline;" onsubmit="return confirm('Yakin tutup lelang ini?')">
+                                                <form method="POST" action="close_auction.php" style="display:inline;" onsubmit="return confirm('Yakin tutup lelang ini?')">
                                                     <input type="hidden" name="auction_id" value="<?= $auction['id'] ?>">
-                                                    <button type="submit" class="btn btn-sm btn-warning">Force Close</button>
+                                                    <button type="submit" class=" btn-sm btn-warning">Close</button>
                                                 </form>
                                             <?php endif; ?>
                                         </div>
@@ -169,7 +169,7 @@ $error = $_GET['error'] ?? '';
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Starting Price ($)*</label>
+                            <label class="form-label">Starting Price (Rp.)*</label>
                             <input type="number" name="starting_price" class="form-control" min="1" step="0.01" required>
                         </div>
 
@@ -199,7 +199,6 @@ $error = $_GET['error'] ?? '';
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Simple image preview
         document.querySelector('input[name="artwork_image"]').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
@@ -213,14 +212,13 @@ $error = $_GET['error'] ?? '';
             }
         });
 
-        // Simple form validation
-        document.querySelector('form').addEventListener('submit', function(e) {
-            const price = document.querySelector('input[name="starting_price"]');
-            if (price.value <= 0) {
-                alert('Starting price must be greater than 0');
-                e.preventDefault();
-            }
-        });
+        // document.querySelector('form').addEventListener('submit', function(e) {
+        //     const price = document.querySelector('input[name="starting_price"]');
+        //     if (price.value <= 0) {
+        //         alert('Starting price must be greater than 0');
+        //         e.preventDefault();
+        //     }
+        // });
     </script>
 </body>
 

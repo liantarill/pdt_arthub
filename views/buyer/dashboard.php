@@ -200,7 +200,7 @@ if ($result && mysqli_num_rows($result) > 0) {
                 <form method="POST" action="add_funds.php">
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label for="amount" class="form-label">Amount ($)</label>
+                            <label for="amount" class="form-label">Amount (Rp)</label>
                             <input type="number" class="form-control" id="amount" name="amount" step="0.01" min="1" required>
                         </div>
                         <div class="mb-3">

@@ -2,7 +2,7 @@
 
 ArtHub adalah platform lelang karya seni online yang memungkinkan seniman untuk menjual karya mereka dan pembeli untuk menawar karya seni yang mereka minati. Sistem ini dibangun menggunakan PHP dan MySQL dengan memanfaatkan stored procedure, trigger, transaction, dan stored function untuk memastikan integritas data dan keamanan transaksi.
 
-![ArtHub](assets/)
+![ArtHub](assets/img/display.png)
 
 ## 📌 Deskripsi Proyek
 
@@ -21,6 +21,8 @@ Sistem ini mengimplementasikan konsep database lanjutan untuk memastikan keamana
 ### 🧠 Stored Procedure
 
 Stored procedure digunakan untuk mengenkapsulasi logika bisnis kompleks di sisi database, memastikan konsistensi dan keamanan operasi.
+
+![Procedure](assets/img/procedure.png)
 
 #### 1. `sp_place_bid` - Prosedur untuk memasukkan penawaran
 
@@ -72,6 +74,7 @@ Prosedur ini menangani proses penutupan lelang, menentukan pemenang, dan memperb
 ### 🚨 Trigger
 
 Trigger adalah kode yang dijalankan secara otomatis di database ketika terjadi operasi tertentu (INSERT, UPDATE, DELETE) pada tabel. Dalam sistem ArtHub, trigger diimplementasikan di level database MySQL, bukan di kode PHP. Namun, kita dapat melihat efek dari trigger tersebut dalam perilaku aplikasi.
+![Trigger](assets/img/triggers.png)
 
 #### Implementasi Trigger di Database
 
@@ -236,6 +239,7 @@ Transaction ini memastikan bahwa penambahan karya seni dan pembuatan lelang baru
 ### 📊 Stored Function
 
 Stored function digunakan untuk mengembalikan nilai berdasarkan perhitungan atau query tertentu.
+![Trigger](assets/img/function.png)
 
 #### 1. `hitung_total_bid` - Fungsi untuk menghitung total penawaran pada lelang
 

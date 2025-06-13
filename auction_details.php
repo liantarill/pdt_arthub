@@ -308,7 +308,7 @@ if (isset($_SESSION['user_id']) && mysqli_num_rows($bids) > 0) {
                             <div class="form-control-plaintext fw-bold text-success" id="current_price"></div>
                         </div>
                         <div class="mb-3">
-                            <label for="bid_amount" class="form-label">Your Bid Amount ($)</label>
+                            <label for="bid_amount" class="form-label">Your Bid Amount (Rp)</label>
                             <input type="number" class="form-control" id="bid_amount" name="bid_amount" step="0.01" required>
                             <div class="form-text">Enter an amount higher than the current bid</div>
                         </div>
