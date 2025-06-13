@@ -130,6 +130,13 @@ $error = $_GET['error'] ?? '';
                                                 class="btn btn-sm">
                                                 View Details
                                             </a>
+
+                                            <?php if ($auction['status'] === 'active') : ?>
+                                                <form method="POST" action="force_close_auction.php" style="display:inline;" onsubmit="return confirm('Yakin tutup lelang ini?')">
+                                                    <input type="hidden" name="auction_id" value="<?= $auction['id'] ?>">
+                                                    <button type="submit" class="btn btn-sm btn-warning">Force Close</button>
+                                                </form>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 </div>

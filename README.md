@@ -2,7 +2,7 @@
 
 ArtHub adalah platform lelang karya seni online yang memungkinkan seniman untuk menjual karya mereka dan pembeli untuk menawar karya seni yang mereka minati. Sistem ini dibangun menggunakan PHP dan MySQL dengan memanfaatkan stored procedure, trigger, transaction, dan stored function untuk memastikan integritas data dan keamanan transaksi.
 
-![ArtHub](/placeholder.svg?height=400&width=800)
+![ArtHub](assets/)
 
 ## 📌 Deskripsi Proyek
 
@@ -26,10 +26,12 @@ Stored procedure digunakan untuk mengenkapsulasi logika bisnis kompleks di sisi 
 
 **Implementasi di file**: `place_bid.php`
 
-````php
+```php
 // Panggil stored procedure
 $query = "CALL sp_place_bid($auction_id, $bidder_id, $bid_amount)";
 $result = mysqli_query($conn, $query);
+```
+
 Prosedur ini menangani validasi penawaran, memastikan penawaran lebih tinggi dari harga saat ini, dan memperbarui harga lelang.
 
 #### 2. `sp_tambah_karya_seni` - Prosedur untuk menambahkan karya seni baru
@@ -48,7 +50,7 @@ function tambahKaryaSeni($title, $description, $artist_id, $starting_price, $ima
     $query = "CALL sp_tambah_karya_seni('$title', '$description', $artist_id, $starting_price, '$image_path')";
     return mysqli_query($conn, $query);
 }
-````
+```
 
 Prosedur ini menangani proses penambahan karya seni baru ke database dan membuat lelang baru secara otomatis.
 
@@ -69,21 +71,104 @@ Prosedur ini menangani proses penutupan lelang, menentukan pemenang, dan memperb
 
 ### 🚨 Trigger
 
-Trigger berfungsi sebagai mekanisme otomatis yang dijalankan ketika terjadi perubahan data, memastikan validasi dan konsistensi data.
+Trigger adalah kode yang dijalankan secara otomatis di database ketika terjadi operasi tertentu (INSERT, UPDATE, DELETE) pada tabel. Dalam sistem ArtHub, trigger diimplementasikan di level database MySQL, bukan di kode PHP. Namun, kita dapat melihat efek dari trigger tersebut dalam perilaku aplikasi.
 
-#### 1. Trigger validasi penawaran
+#### Implementasi Trigger di Database
 
-Meskipun tidak terlihat langsung dalam kode PHP, trigger ini diimplementasikan di database untuk memvalidasi penawaran sebelum dimasukkan ke tabel `bids`. Trigger ini memastikan:
+Berikut adalah contoh implementasi trigger yang kemungkinan digunakan dalam database ArtHub:
 
-- Penawaran lebih tinggi dari harga saat ini
-- Lelang masih aktif
-- Pembeli memiliki saldo yang cukup
+1. **Trigger untuk Validasi Penawaran**
 
-Trigger ini diaktifkan saat prosedur `sp_place_bid` dijalankan.
+```sql
+DELIMITER //
+CREATE TRIGGER before_bid_insert
+BEFORE INSERT ON bids
+FOR EACH ROW
+BEGIN
+    DECLARE current_auction_price DECIMAL(10,2);
+    DECLARE auction_status VARCHAR(20);
+    DECLARE bidder_balance DECIMAL(10,2);
 
-#### 2. Trigger update harga lelang
+    -- Ambil harga dan status lelang saat ini
+    SELECT current_price, status INTO current_auction_price, auction_status
+    FROM auctions WHERE id = NEW.auction_id;
 
-Trigger ini secara otomatis memperbarui harga saat ini (`current_price`) pada tabel `auctions` ketika ada penawaran baru yang valid.
+    -- Ambil saldo pembeli
+    SELECT balance INTO bidder_balance
+    FROM users WHERE id = NEW.bidder_id;
+
+    -- Validasi penawaran
+    IF NEW.bid_amount &lt;= current_auction_price THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Bid amount must be higher than current price';
+    END IF;
+
+    -- Validasi status lelang
+    IF auction_status != 'active' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Cannot bid on inactive auction';
+    END IF;
+
+    -- Validasi saldo pembeli
+    IF bidder_balance &lt; NEW.bid_amount THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Insufficient balance';
+    END IF;
+END //
+DELIMITER ;
+```
+
+2. **Trigger untuk Update Harga Lelang**
+
+```sql
+DELIMITER //
+CREATE TRIGGER after_bid_insert
+AFTER INSERT ON bids
+FOR EACH ROW
+BEGIN
+    -- Update harga lelang saat ini
+    UPDATE auctions
+    SET current_price = NEW.bid_amount
+    WHERE id = NEW.auction_id AND current_price &lt; NEW.bid_amount;
+END //
+DELIMITER ;
+```
+
+#### Bukti Penggunaan Trigger dalam Aplikasi
+
+Meskipun trigger didefinisikan di database, kita dapat melihat efeknya dalam kode aplikasi:
+
+1. **Di file `place_bid.php`**:
+
+```php
+// Panggil stored procedure
+$query = "CALL sp_place_bid($auction_id, $bidder_id, $bid_amount)";
+$result = mysqli_query($conn, $query);
+
+if ($result) {
+    $_SESSION['success'] = "Bid placed successfully!";
+} else {
+    $_SESSION['error'] = "Failed to place bid: " . mysqli_error($conn);
+}
+```
+
+Ketika penawaran gagal karena melanggar validasi yang diterapkan oleh trigger, pesan error dari trigger akan ditampilkan kepada pengguna melalui `mysqli_error($conn)`.
+
+2. **Di file `dashboard.php` (buyer)**:
+
+```php
+<?php if ($bid['bid_amount'] == $bid['highest_bid'] && $bid['auction_status'] === 'active'): ?>
+    <div class="alert alert-success py-2">
+        <small>You're currently winning!</small>
+    </div>
+<?php elseif ($bid['bid_amount'] &lt; $bid['highest_bid'] && $bid['auction_status'] === 'active'): ?>
+    <div class="alert alert-warning py-2">
+        <small>You've been outbid</small>
+    </div>
+<?php endif; ?>
+```
+
+Kode ini menampilkan status penawaran yang diperbarui secara otomatis oleh trigger `after_bid_insert` yang memperbarui harga lelang saat ini.
 
 ### 🔄 Transaction
 
