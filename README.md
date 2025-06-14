@@ -264,28 +264,6 @@ if (isset($_SESSION['user_id'])) {
 
 Fungsi ini mengembalikan jumlah total penawaran yang telah dilakukan pada suatu lelang.
 
-### 🔄 Backup
-
-Sistem backup otomatis tidak terlihat secara eksplisit dalam kode yang diberikan, namun dapat diimplementasikan dengan:
-
-1. Script backup database yang dijalankan secara berkala menggunakan cron job
-2. Backup file gambar karya seni secara berkala
-3. Pencatatan log transaksi untuk pemulihan data jika terjadi kesalahan
-
-## 🔧 Teknologi yang Digunakan
-
-- **Backend**: PHP 7.4+
-- **Database**: MySQL 8.0+
-- **Frontend**: HTML5, CSS3, Bootstrap 5
-- **JavaScript**: Vanilla JS
-
-## 🚀 Cara Menjalankan Proyek
-
-1. Clone repositori ini
-2. Import skema database dari file `database.sql`
-3. Konfigurasi koneksi database di `config/db.php`
-4. Jalankan aplikasi menggunakan server web seperti Apache
-
 ## 🔄 Backup Otomatis
 
 Sistem backup otomatis diimplementasikan untuk memastikan keamanan dan integritas data dalam sistem ArtHub. Backup dilakukan secara berkala untuk mencegah kehilangan data akibat kegagalan sistem atau kesalahan operasional.
