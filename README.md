@@ -129,14 +129,23 @@ Meskipun trigger didefinisikan di database, kita dapat melihat efeknya dalam kod
 1. **Di file `place_bid.php`**:
 
 ```php
-// Panggil stored procedure
-$query = "CALL sp_place_bid($auction_id, $bidder_id, $bid_amount)";
-$result = mysqli_query($conn, $query);
+try {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $auction_id = (int)$_POST['auction_id'];
+        $bidder_id = (int)$_SESSION['user_id'];
+        $bid_amount = (float)$_POST['bid_amount'];
 
-if ($result) {
-    $_SESSION['success'] = "Bid placed successfully!";
-} else {
-    $_SESSION['error'] = "Failed to place bid: " . mysqli_error($conn);
+        // Langsung query
+        $query = "CALL sp_place_bid($auction_id, $bidder_id, $bid_amount)";
+        mysqli_query($conn, $query);
+
+        $_SESSION['success'] = "Bid placed successfully!";
+    }
+} catch (mysqli_sql_exception $e) {
+    $_SESSION['error'] = "Failed to place bid: " . $e->getMessage();
+} finally {
+    header("Location: ../../auction_details.php?id=" . $auction_id);
+    exit();
 }
 ```
 
