@@ -286,7 +286,7 @@ Sistem backup otomatis tidak terlihat secara eksplisit dalam kode yang diberikan
 3. Konfigurasi koneksi database di `config/db.php`
 4. Jalankan aplikasi menggunakan server web seperti Apache
 
-### 🔄 Backup Otomatis
+## 🔄 Backup Otomatis
 
 Sistem backup otomatis diimplementasikan untuk memastikan keamanan dan integritas data dalam sistem ArtHub. Backup dilakukan secara berkala untuk mencegah kehilangan data akibat kegagalan sistem atau kesalahan operasional.
 
@@ -362,7 +362,7 @@ exit();
 - **Compliance**: Memenuhi standar keamanan data untuk sistem lelang
 - **Audit Trail**: Menyimpan riwayat perubahan data untuk keperluan audit
 
-### 🧩 Relevansi Proyek dengan Pemrosesan Data Terdistribusi
+## 🧩 Relevansi Proyek dengan Pemrosesan Data Terdistribusi
 
 Meskipun ArtHub saat ini diimplementasikan sebagai sistem monolitik, proyek ini memiliki relevansi yang kuat dengan konsep pemrosesan data terdistribusi dan dapat dikembangkan ke arah tersebut.
 
