@@ -71,7 +71,7 @@ if ($result && mysqli_num_rows($result) > 0) {
     <div class="hero-section text-white py-5">
         <div class="container text-end">
             <h1 class="navbar-text me-3">Welcome, <?php echo htmlspecialchars($_SESSION['full_name']); ?></h1>
-            <span class="navbar-text me-3">Balance: Rp. <?php echo number_format($user_balance, 2); ?></span>
+            <span class="navbar-text me-3">Balance: Rp. <?php echo number_format($user_balance, 2, ',', '.'); ?></span>
         </div>
     </div>
 

@@ -37,33 +37,26 @@ Prosedur ini menangani validasi penawaran, memastikan penawaran lebih tinggi dar
 
 #### 2. `sp_tambah_karya_seni` - Prosedur untuk menambahkan karya seni baru
 
-**Implementasi di file**: `db.php`
+**Implementasi di file**: `upload.php`
 
 ```php
-function tambahKaryaSeni($title, $description, $artist_id, $starting_price, $image_path)
-{
-    global $conn;
-    $title = mysqli_real_escape_string($conn, $title);
-    $description = mysqli_real_escape_string($conn, $description);
-    $image_path = mysqli_real_escape_string($conn, $image_path);
+query = "CALL sp_tambah_karya_seni('$title', '$description', $artist_id, $starting_price, '$relativePath')";
+mysqli_query($conn, $query);
 
-    $query = "CALL sp_tambah_karya_seni('$title', '$description', $artist_id, $starting_price, '$image_path')";
-    return mysqli_query($conn, $query);
-}
+$_SESSION['success'] = "Karya seni berhasil ditambahkan dan lelang dimulai!";
 ```
 
 Prosedur ini menangani proses penambahan karya seni baru ke database dan membuat lelang baru secara otomatis.
 
 #### 3. `sp_tutup_lelang` - Prosedur untuk menutup lelang
 
-**Implementasi di file**: `db.php` dan `close_auction.php`
+**Implementasi di file**: `force_close_auction.php` dan `close_auction.php`
 
 ```php
-function tutupLelang($auction_id)
-{
-    global $conn;
-    $query = "CALL sp_tutup_lelang($auction_id)";
-    return mysqli_query($conn, $query);
+if (tutupLelang($auction_id)) {
+        $_SESSION['success'] = 'Berhasil menutup lelang';
+} else {
+    $_SESSION['error'] = 'Gagal menutup lelang';
 }
 ```
 
@@ -249,8 +242,6 @@ $total_bid_amount = hitungTotalBid($auction_id);
 #### 2. `get_highest_bid` - Fungsi untuk menghitung total penawaran pada lelang
 
 **Implementasi di file**: `auction_details.php`
-
-Implementasi fungsi `get_highest_bid` :
 
 ```php
 $is_winning = false;

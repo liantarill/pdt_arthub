@@ -10,8 +10,8 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'artist') {
 $artist_id = $_SESSION['user_id'];
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['add_artwork'])) {
-    header("Location: dashboard.php");
     $_SESSION['error'] = "Permintaan tidak valid";
+    header("Location: dashboard.php");
     exit();
 }
 
@@ -19,16 +19,15 @@ $title = mysqli_real_escape_string($conn, $_POST['title']);
 $description = mysqli_real_escape_string($conn, $_POST['description']);
 $starting_price = (float) $_POST['starting_price'];
 $image = $_FILES['artwork_image'];
-$end_time = mysqli_real_escape_string($conn, $_POST['end_time']);
 
-// Validasi
+// Validasi dasar
 if (!$title || !$description || $starting_price <= 0 || !$image['tmp_name']) {
-    $_SESSION['error'] = "Field wajib diisi semua";
+    $_SESSION['error'] = "Semua field wajib diisi";
     header("Location: dashboard.php");
     exit();
 }
 
-// Buat direktori jika belum ada
+// Buat folder jika belum ada
 $uploadDir = '../../assets/uploads/';
 if (!is_dir($uploadDir)) {
     mkdir($uploadDir, 0755, true);
@@ -38,32 +37,25 @@ $newName = uniqid('art_') . '.' . strtolower(pathinfo($image['name'], PATHINFO_E
 $targetPath = $uploadDir . $newName;
 $relativePath = 'assets/uploads/' . $newName;
 
+// Upload file
 if (!move_uploaded_file($image['tmp_name'], $targetPath)) {
-    $_SESSION['error'] = "Gagal mengunggah gambar";
+    $_SESSION['error'] = "Gagal mengunggah gambar.";
     header("Location: dashboard.php");
     exit();
 }
 
-// Simpan ke DB
-mysqli_begin_transaction($conn);
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
 try {
-    $artwork_sql = "INSERT INTO artworks (title, description, artist_id, image_path)
-                    VALUES ('$title', '$description', $artist_id, '$relativePath')";
-    mysqli_query($conn, $artwork_sql);
-    $artwork_id = mysqli_insert_id($conn);
+    // Panggil prosedur tersimpan
+    $query = "CALL sp_tambah_karya_seni('$title', '$description', $artist_id, $starting_price, '$relativePath')";
+    mysqli_query($conn, $query);
 
-    $auction_sql = "INSERT INTO auctions (artwork_id, starting_price, current_price, status, start_time, end_time)
-                    VALUES ($artwork_id, $starting_price, $starting_price, 'active', NOW(), '$end_time')";
-    mysqli_query($conn, $auction_sql);
-
-    mysqli_commit($conn);
-    $_SESSION['success'] = "Karya berhasil ditambahkan";
+    $_SESSION['success'] = "Karya seni berhasil ditambahkan dan lelang dimulai!";
 } catch (Exception $e) {
-    mysqli_rollback($conn);
-    $_SESSION['error'] = "Error: " . $e->getMessage();
+    $_SESSION['error'] = "Gagal menambahkan karya: " . $e->getMessage();
 
-    // Hapus file yang sudah diupload jika terjadi error
+    // Hapus gambar kalau gagal
     if (file_exists($targetPath)) {
         unlink($targetPath);
     }

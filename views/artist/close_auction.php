@@ -2,6 +2,11 @@
 session_start();
 require_once '../../config/db.php';
 
+if (!isset($_SESSION['user_id'])) {
+    echo "Akses ditolak";
+    exit();
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $auction_id = $_POST['auction_id'];
     if (tutupLelang($auction_id)) {

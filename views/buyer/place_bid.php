@@ -8,21 +8,23 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'buyer') {
     exit();
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $auction_id = (int)$_POST['auction_id'];
-    $bidder_id = $_SESSION['user_id'];
-    $bid_amount = (float)$_POST['bid_amount'];
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
-    // Panggil stored procedure 
-    $query = "CALL sp_place_bid($auction_id, $bidder_id, $bid_amount)";
-    $result = mysqli_query($conn, $query);
+try {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $auction_id = (int)$_POST['auction_id'];
+        $bidder_id = (int)$_SESSION['user_id'];
+        $bid_amount = (float)$_POST['bid_amount'];
 
-    if ($result) {
+        // Langsung query
+        $query = "CALL sp_place_bid($auction_id, $bidder_id, $bid_amount)";
+        mysqli_query($conn, $query);
+
         $_SESSION['success'] = "Bid placed successfully!";
-    } else {
-        $_SESSION['error'] = "Failed to place bid: " . mysqli_error($conn);
     }
-
+} catch (mysqli_sql_exception $e) {
+    $_SESSION['error'] = "Failed to place bid: " . $e->getMessage();
+} finally {
     header("Location: ../../auction_details.php?id=" . $auction_id);
     exit();
 }

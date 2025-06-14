@@ -30,8 +30,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (!in_array($role, ['artist', 'buyer'])) {
         $error = 'Invalid role selected';
     } else {
-        // Connect to database
-        $conn = mysqli_connect($host, $username, $password, $database);
 
         if (!$conn) {
             die("Connection failed: " . mysqli_connect_error());
