@@ -67,105 +67,91 @@ Prosedur ini menangani proses penutupan lelang, menentukan pemenang, dan memperb
 Trigger adalah kode yang dijalankan secara otomatis di database ketika terjadi operasi tertentu (INSERT, UPDATE, DELETE) pada tabel. Dalam sistem ArtHub, trigger diimplementasikan di level database MySQL, bukan di kode PHP. Namun, kita dapat melihat efek dari trigger tersebut dalam perilaku aplikasi.
 ![Trigger](assets/img/triggers.png)
 
-#### Implementasi Trigger di Database
+#### 1. Trigger Pengecekan Akhir Lelang (`tr_check_auction_end`)
 
-Berikut adalah contoh implementasi trigger yang kemungkinan digunakan dalam database ArtHub:
-
-1. **Trigger untuk Validasi Penawaran**
+Secara otomatis menutup lelang yang telah mencapai waktu berakhir ketika penawaran baru ditempatkan.
 
 ```sql
 DELIMITER //
-CREATE TRIGGER before_bid_insert
-BEFORE INSERT ON bids
-FOR EACH ROW
-BEGIN
-    DECLARE current_auction_price DECIMAL(10,2);
-    DECLARE auction_status VARCHAR(20);
-    DECLARE bidder_balance DECIMAL(10,2);
 
-    SELECT current_price, status INTO current_auction_price, auction_status
-    FROM auctions WHERE id = NEW.auction_id;
-
-    SELECT balance INTO bidder_balance
-    FROM users WHERE id = NEW.bidder_id;
-
-    IF NEW.bid_amount &lt;= current_auction_price THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Bid amount must be higher than current price';
-    END IF;
-
-    IF auction_status != 'active' THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Cannot bid on inactive auction';
-    END IF;
-
-    IF bidder_balance &lt; NEW.bid_amount THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Insufficient balance';
-    END IF;
-END //
-DELIMITER ;
-```
-
-2. **Trigger untuk Update Harga Lelang**
-
-```sql
-DELIMITER //
-CREATE TRIGGER after_bid_insert
+CREATE TRIGGER tr_check_auction_end
 AFTER INSERT ON bids
 FOR EACH ROW
 BEGIN
-    UPDATE auctions
-    SET current_price = NEW.bid_amount
-    WHERE id = NEW.auction_id AND current_price &lt; NEW.bid_amount;
+DECLARE v_end_time DATETIME;
+DECLARE v_status VARCHAR(20);
+
+    -- Ambil waktu berakhir dan status lelang
+    SELECT end_time, status INTO v_end_time, v_status
+    FROM auctions
+    WHERE id = NEW.auction_id;
+
+    -- Jika lelang sudah berakhir, tutup lelang
+    IF NOW() >= v_end_time AND v_status = 'active' THEN
+        CALL sp_tutup_lelang(NEW.auction_id);
+    END IF;
+
 END //
+
 DELIMITER ;
 ```
 
-#### Bukti Penggunaan Trigger dalam Aplikasi
+**Tujuan**: Memastikan lelang ditutup secara otomatis ketika waktu berakhir.
 
-Meskipun trigger didefinisikan di database, kita dapat melihat efeknya dalam kode aplikasi:
+#### 2. Pencatat Aktivitas Penawaran (`tr_bid_activity_log`)
 
-1. **Di file `place_bid.php`**:
+Mencatat semua aktivitas penawaran ke tabel transaksi untuk tujuan audit.
 
-```php
-try {
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $auction_id = (int)$_POST['auction_id'];
-        $bidder_id = (int)$_SESSION['user_id'];
-        $bid_amount = (float)$_POST['bid_amount'];
+```sql
+DELIMITER //
 
-        // Langsung query
-        $query = "CALL sp_place_bid($auction_id, $bidder_id, $bid_amount)";
-        mysqli_query($conn, $query);
+CREATE TRIGGER tr_bid_activity_log
+AFTER INSERT ON bids
+FOR EACH ROW
+BEGIN
+INSERT INTO transactions (user_id, auction_id, type, amount, description, status)
+VALUES (NEW.bidder_id, NEW.auction_id, 'deposit', NEW.bid_amount,
+CONCAT('Penawaran ditempatkan untuk lelang ID: ', NEW.auction_id), 'completed');
+END //
 
-        $_SESSION['success'] = "Bid placed successfully!";
-    }
-} catch (mysqli_sql_exception $e) {
-    $_SESSION['error'] = "Failed to place bid: " . $e->getMessage();
-} finally {
-    header("Location: ../../auction_details.php?id=" . $auction_id);
-    exit();
-}
+DELIMITER ;
 ```
 
-Ketika penawaran gagal karena melanggar validasi yang diterapkan oleh trigger, pesan error dari trigger akan ditampilkan kepada pengguna melalui `mysqli_error($conn)`.
+**Tujuan**: Memelihara jejak audit lengkap dari semua aktivitas penawaran.
 
-2. **Di file `dashboard.php` (buyer)**:
+#### 3. Trigger Update Saldo (`tr_update_balance_after_bid`)
 
-```php
-<?php if ($bid['bid_amount'] == $bid['highest_bid'] && $bid['auction_status'] === 'active'): ?>
-    <div class="alert alert-success py-2">
-        <small>You're currently winning!</small>
-    </div>
-<?php elseif ($bid['bid_amount'] &lt; $bid['highest_bid'] && $bid['auction_status'] === 'active'): ?>
-    <div class="alert alert-warning py-2">
-        <small>You've been outbid</small>
-    </div>
-<?php endif; ?>
+Mengelola update saldo pengguna ketika penawaran ditempatkan, termasuk mengembalikan dana penawar tertinggi sebelumnya.
+
+```sql
+DELIMITER //
+
+CREATE TRIGGER tr_update_balance_after_bid
+AFTER INSERT ON bids
+FOR EACH ROW
+BEGIN
+-- Cadangkan jumlah penawaran (tahan dana)
+UPDATE users
+SET balance = balance - NEW.bid_amount
+WHERE id = NEW.bidder_id;
+
+    -- Kembalikan dana penawar tertinggi sebelumnya jika ada
+    UPDATE users u
+    INNER JOIN (
+        SELECT bidder_id, bid_amount
+        FROM bids
+        WHERE auction_id = NEW.auction_id
+        AND id < NEW.id
+        ORDER BY bid_amount DESC, bid_time ASC
+        LIMIT 1
+    ) prev_bid ON u.id = prev_bid.bidder_id
+    SET u.balance = u.balance + prev_bid.bid_amount
+    WHERE prev_bid.bidder_id != NEW.bidder_id;
+
+END //
+
+DELIMITER ;
 ```
-
-Kode ini menampilkan status penawaran yang diperbarui secara otomatis oleh trigger `after_bid_insert` yang memperbarui harga lelang saat ini.
 
 ### 🔄 Transaction
 
